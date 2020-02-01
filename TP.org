@@ -1,0 +1,187 @@
+
+
+* TP 1 : 30/01/2020
+
+Introduction au Pibus
+
+Bus multimaître synchrone
+
+Deux types de composants matériels qui doivent communiquer entre eux :
+- les maîtres sont par exemple les coeurs (et leurs caches privés)
+
+- les cibles, genre la ram, la rom, le tty
+
+La fonction du bus, c'est l'aiguillage et le routage.
+
+On a un autre bus, le bus des réponses.
+
+Un bus de commandes, un bus de réponses.
+
+Un maître envoie des commandes et reçoit des réponses
+
+Une cible reçoit des commandes en envoie des réponses
+
+
+On a toujours besoin d'un acquittement.
+
+
+
+On a un fil req et un fil gnt par maître qui arrive au BCU, bus control unit. (un des rarissimes automates non-Moore, donc Mealy général).
+
+2n fils avec n le nombre de maîtres.
+
+[dessin du pibus]
+
+
+On peut spécifier un protocole du bus par son chronogramme :
+
+Phase d'allocation : la demande du bus et la réponse doivent avoir lieu dans le même cycle d'horloge.
+
+Phase d'adresse : les signaux Addr, lock, etc...
+
+Phase de donnée : D et ACK 
+
+
+L'allocation d'un nouveau maître peut se faire pendant le dernier (LOCK est à 0) cycle de la transaction n à condition que la valeur envoyée soit RDY ou ERROR.
+
+
+
+
+** Question C1
+
+*** Noeud IDLE
+
+F : C(SEL)
+A : C(READ).DELAY.SEL.ADR_OK
+B : C(READ).C(DELAY).SEL.ADR_OK
+C : READ.C(DELAY).SEL.ADR_OK
+D : READ.DELAY.SEL.ADR_OK
+E : C(ADR_OK).SEL
+
+On a l'orthogonalité sur ce noeud :
+
+F d'intersection nulle avec tous les autres (car SEL.C(SEL) = 0).
+On se permet donc de l'éliminer.
+
+E est d'intersection nulle avec tous les autres (car ADR_OK.C(ADR_OK) = 0)
+On se permet donc de l'éliminer.
+
+A est d'intersection nulle avec C et D (car READ.C(READ) = 0)
+B est d'intersection nulle avec C et D (car READ.C(READ) = 0)
+
+A est d'intersection nulle avec B (car DELAY.C(DELAY) = 0)
+
+C est d'intersection nulle avec A et B (car READ.C(READ) = 0)
+D est d'intersection nulle avec A et B (car READ.C(READ) = 0)
+On a montré que A et B étaient d'intersection nulle avec tous les autres, et entre eux.
+On peut donc éliminer A et B.
+
+C est d'intersection nulle avec D (car DELAY.C(DELAY)).
+On a montré que C et D étaient d'intersection nulle avec tous les autres, et entre eux.
+On peut donc éliminer C et D.
+
+On a bien l'orthogonalité pour IDLE.
+
+La complétude :
+
+A + B = C(READ).DELAY.SEL.ADR_OK + C(READ).C(DELAY).SEL.ADR_OK
+A + B = C(READ).SEL.ADR_OK
+
+C + D = READ.C(DELAY).SEL.ADR_OK + READ.DELAY.SEL.ADR_OK
+C + D = READ.SEL.ADR_OK
+
+Donc :
+
+A + B + C + D = C(READ).SEL.ADR_OK + READ.SEL.ADR_OK
+A + B + C + D = SEL.ADR_OK
+
+Donc :
+
+A + B + C + D + E = SEL.ADR_OK + SEL.C(ADR_OK)
+A + B + C + D + E = SEL
+
+Donc :
+
+A + B + C + D + E + F = SEL + C(SEL) = 1
+
+On a bien la somme de toutes les conditions de transition égale à 1.
+
+*** Noeud R_WAIT
+
+V : GO
+V' : C(GO)
+
+L'orthogonalité et la complétude sont triviale.
+
+*** Noeud W_WAIT
+
+U : GO
+U' : C(GO)
+
+L'orthogonalité et la complétude sont triviale.
+
+*** Noeud R_OK
+
+R : C(ADR_OK).SEL
+S : ADR_OK.SEL
+T : C(SEL)
+
+L'orthogonalité est évidente :
+
+T.R = 0
+T.S = 0
+R.S = 0
+
+La complétude :
+
+R + S = C(ADR_OK).SEL + ADR_OK.SEL
+R + S = SEL
+
+R + S + T = SEL + C(SEL) = 1
+
+On a bien la complétude.
+
+*** Noeud W_OK
+
+X : ADR_OK.SEL
+Y : C(ADR_OK).SEL
+Z : C(SEL)
+
+La démonstration de l'orthogonalité et de la complétude est symétrique à celle du noeud R_OK.
+
+*** Noeud ERROR
+
+On n'a pas de transition qui nous fait rester dans l'état ERROR.
+
+On admet donc qu'on va dans l'état IDLE de manière inconditionnée.
+
+G : 1
+
+** Question C2
+
+*** Noeud IDLE
+
+Dans ces état, le matériel n'écrit pas sur le bus :
+
+On a donc ACK_EN = 0
+La valeur de ACK_VALUE n'a pas d'importance, on lui met NULL
+On a DT_EN = 0 puisqu'on écrit pas sur le bus de données.
+On n'écrit ni ne lit dans la mémoire, donc MEM_CMD est à NOP.
+
+*** Noeud R_WAIT
+
+Dans cet état, on écrit sur le bus ACK la valeur WAIT. On a donc besoin de mettre le signal ACK_VALUE à WAIT, et ACK_EN à 1.
+
+On écrit pas sur le bus de données, puisque celles-ci ne sont pas encore prêtes (on envoie WAIT pour une raison). Donc DT_EN est à 0.
+
+*** Résumé
+
+|        | ACK_EN | ACK_VALUE | DT_EN | MEM_CMD |
+| IDLE   |      0 | NULL      |     0 | NOP     |
+| R_WAIT |      1 | WAIT      |     0 |         |
+| R_OK   |        |           |       |         |
+| W_WAIT |        |           |       |         |
+| W_OK   |        |           |       |         |
+| ERROR  |        |           |       |         |
+
+
