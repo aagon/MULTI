@@ -18,111 +18,288 @@ Les textes des TP sont disponibles dès maintenant (24.25.3 ème étage)
 
 * CM 1 : 29/01/2020
 
-
-Automate de Moore, automate de Mealy (Mealy cas général, Moore simplifié où les entrées n'ont pas d'influence *directe*).
-
 L'ensemble de l'industrie de la haute technologie (logiciel comme matériel) repose sur deux piliers théoriques :
 - Algèbre de Boole
 - Théorie des automates synchrones communicants
 
-Tout système matériel numérique synchrone peut être décrit comme une automatque ou un ensemble d'automates communicants.
+#+BEGIN_DEFINITION
+Automate fini (Finite state machine) (définition générale)
+
+Machine abstraite qui peut être, à chaque instant, être dans exactement un état choisi parmi un ensemble fini et connu d'états. La machine peut passer d'un état à un autre en réponse à certaines entrées.
+
+On définit de manière complète un automate fini par la liste de ses états, son état initial, et les entrées qui font passer l'automate d'un état à un autre.
+#+END_DEFINITION
+
+Tout système matériel numérique synchrone peut être décrit comme une automate ou un ensemble d'automates communicants.
+
+L'ensemble des états d'un automate qui chercherait à décrire complètement le comportement d'un petit ordinateur est beaucoup trop grand pour pouvoir être donné.
+
+On peut combiner les automates, et on va s'efforcer de modéliser les comportements de petites parties du système matériel qu'on cherche à comprendre.
+
+Comment définit-on l'état d'un automate ?
+Par un ensemble de registres internes à l'automate.
+
+Chaque automate a un certain nombre n d'entrées, qu'on va nommer E_0, E_1, ..., E_{n-1}.
+
+Puisqu'on cherche à représenter du matériel, ces entrées peuvent être pensées comme des nappes de fils. Ces nappes de fils en entrée peuvent être en sortie d'autres automates, et c'est en cela qu'on peut considérer un ensemble d'automates communicants.
+
+Ensuite, chaque automate a un certain nombre d'états, qui sont représentés par des registres. Imaginons ici un registre de p bits, qui permet donc de stocker 2^p états.
+
+On peut éventuellement nommer les bits des registres R_0, R_1, ..., R_{p-1}.
+
+On dit que la machine est synchrone parce que tous les registres de tous les automates sont mis à jour en même temps, sur le front montant de l'horloge (le front descendant ne nous intéresse pas). Tous les registres sont contrôlés par le même signal de synchronisation. En entrée de tous les automates, on a donc un fil spécial connecté directement au registre, qui dirige l'instant de sa mise à jour.
+
+On dit que le matériel est numérique parce que les automates ne manipulent que des bits, aussi bien dans leurs entrées, registre et sorties.
+
+En plus des valeurs de bits du registre R_0, R_1, ..., R_{p-1}, on doit aussi nommer les valeurs des bits du registre après synchronisation NR_0, NR_1, ..., NR_{p-1}.
+
+En sortie de cet automate se trouve aussi une nappe de m fils S_0, S_1, ..., S_{m-1}, qui sont potentiellement en entrée d'un autre automate.
+
+On remarque donc bien que tous les E, R, NR et S sont des variables booléennes.
+
+La question est la suivante : comment décrire le comportement d'un de ces automates de manière non ambigüe et systématique.
+
+On a besoin de décrire exactement comment les nouvelles valeurs des registres dépendent des anciennes valeurs et des entrées. Techniquement, si on avait un seul automate, on pourrait s'arrêter là :
+
+p fonctions booléennes, les *fonctions de transition* :
+
+NR_{k} = T_k (E_0, ...., E_{n-1}, R_0, ...., R_{p-1}) avec k allant de 0 à p-1.
+
+Qui dépendent effectivement des entrées et de l'état, soit des valeurs des bits du registre. 
+
+Puisqu'on considère des automates connectés entre eux, on a aussi besoin des m fonctions booléennes qui donnent la valeur des fils en sortie. Ces fonctions sont appelées *fonctions de génération* :
+
+S_{j} = G_{j} (E_0, ...., E_{n-1}, R_0, ...., R_{p-1})
 
 
-Numériques : ne manipulent que des bits, des variables booléennes.
+Cet automate qu'on vient de définir a donc les propriétés suivantes :
 
-Machine 
+Son état suivant dépend des valeurs en entrée et de son état courant.
+Les valeurs en sorties dépendent de son état courant et de ses entrées.
 
-[à rajouter] définition de combinatoire
+C'est un *automate de Mealy*.
 
-système séquentiel : peut avoir une mémoire.
+#+BEGIN_DEFINITION
+Automate de Mealy
 
+Un automate de Mealy est un automate fini dont les valeurs en sorties sont déterminées par l'état courant et les valeurs en entrée.
+#+END_DEFINITION
 
-Tous les registres sont contrôlés par le même signal de synchronisation.
+De cet automate, on peut imaginer plusieurs cas particuliers. On peut par exemple imaginer un automate dont les valeurs en sorties :
+- Dépendent uniquement de l'état courant
+- Dépendent uniquement des valeurs en entrée. 
 
-Dans un registre, on peut écrire p bits (diffère de n et de m en général)
+Le premier cas particulier est celui qui va nous intéresser. Dans cette machine, les entrées n'ont d'influence directe que sur l'état, qui lui influence la sortie à son tour. Une machine qui respecte cette propriété est un *automate de Moore*.
 
+Le deuxième cas particulier ne nous intéresse pas. Si l'état courant n'a pas d'influence, la machine n'a pas de mémoire, la machine se résume en fait à un paquet de fonctions combinatoires.
 
-Lors du front montant de l'horloge, on écrit dans tous les registres (en même temps : *synchrone*)
+On va essayer, autant qu'il est possible, de se débarasser des automates de Mealy.
 
-R est la valeur qui sort du registre, NR est la valeur qui entre.
+Pourquoi ?
 
+Puisque les sorties de l'automate de Mealy dépendent de l'état courant et des entrées, on peut avoir des fonctions de génération qui ne font intervenir que les entrées. Or les entrées sont continues (ce sont des fils qui balancent continûment un signal), ce qui fait que les changements de sortie peuvent intervenir à n'importe quel moment, pas seulement sur les fronts d'horloge.
 
-Comment décrire le comportement d'une boîte de manière non ambigue, systématique
+Inversement, les sorties d'un automate de Moore changent toujours en même temps que le front d'horloge.
 
+Ce problème va encore plus loin. Puisque un changement d'entrée (dans Mealy) peut causer un changement de sortie n'importe quand, si plusieurs machines de Mealy sont interconnectées, on peut créer du retour asynchrone.
 
-On a besoin de décrire comment les valeurs de sortie dépendent des valeurs en entrée et 
-
-
-
-Une fonction booléenne :
-
-Prend un ensemble de valeurs E_0, E_1, ..., E_{n-1}, et rend m valeurs S_j(E_0, ..., E_{n-1}).
-
-S_j est une fonction booléenne.
-
-
-Une fonction de génération :
-
-m fonctions S_j = G_j(E_0, ...., R_0, ...., R_{p-1})
-
-Pour décrire complètement le comportement de la boîte, il faut aussi définir p fonctions (une par bit à écrire dans le registre), p fonctions :
-
-NR_{k} = T_k (E_0, ...., E_{n-1}, R_0, ...., R_{p-1})
-
-(il faut aussi définir un état initial)
-
-Il existe un E_i spécial, le reset, qui sert juste à forcer une valeur dans les registres internes.
-
-Un état est défini comme une valeur stockée dans le registre.
-
+Il existe un fil en entrée spécial, le reset, qui sert juste à forcer une valeur dans les registres internes.
 
 
 ** Représentation graphique d'un automate d'état synchrone
 
-"Finite state machine" en anglais
+La manière naturelle de représenter un automate fini, c'est le graphe orienté.
 
-Graphe orientés : arc a toujours une source (point à mettre absolument) et une destination (flèche)
+Graphe orientés : arc a toujours une source (point à mettre absolument) et une destination (flèche).
 
-1 noeud représente 1 état identifié par un nom.
+Un noeud représente un état identifié par un nom.
 
 On donne un nom à une valeur qui a une signification du point de vue du comportement qu'on cherche à décrire.
 
-1 arc représente 1 transition.
+Un arc représente une transition.
 
 Transition : Possibilité de passer de "i" au temps n à "j" au temps n+1.
 
-On peut toujours écrire un automate d'état fini en Moore uniquement. (pourquoi vouloir se débarasser de Mealy ? (reprendre la démonstration))
-
-
+On peut toujours écrire un automate d'état fini en Moore uniquement. Par contre, tout automate de Mealy n'a pas d'équivalent Moore identique. On peut créer une machine de Moore presque identique, avec les sorties différées dans le temps. (des sorties asynchrones dans Mealy deviennent synchrone dans Moore).
 
 En matériel, on essaie de ne définir que des automates de Moore, pour éviter les chaînes longues (et pour forcer les changements d'états uniquement sur les fronts d'horloge).
 
-Puisque dans le cas des automates de Moore, la valeur en sortie ne dépend que de la valeur du registre, on peut étiqueter par la valeur S_j, dépendante de l'état.
+Puisque dans le cas des automates de Moore, la valeur en sortie ne dépend que de la valeur du registre, on peut étiqueter par les valeurs en sortie, dépendante de l'état.
 
-Une transition "i" et "j" ne dépend que des valeurs des entrées (E_0, ..., E_{n-1}). On peut avoir envie d'étiqueter la transition avec la condition sur l'entrée qui la fait advenir (cette condition est une expression booléenne qui ne fait intervenir que des E, et si possible un petit nombre de ces E).
+Une transition "i" vers "j" ne dépend que des valeurs des entrées (E_0, ..., E_{n-1}) puisque l'état est donnné. On peut avoir envie d'étiqueter la transition avec la condition sur l'entrée qui la fait advenir (cette condition est une expression booléenne qui ne fait intervenir que des E, et si possible un petit nombre de ces E).
 
-
-2 conditions :
+Par contre, si on veut un comportement déterministe (et on veut absolument un comportement déterministe de la machine), on doit vérifier deux conditions :
 
 - Si je prends deux conditions de sortie au hasard, leur intersection doit être nulle (donne *l'orthogonalité*)
 - Si je prends toutes les conditions et que je fais leur union, je dois avoir l'univers. (donne la *complétude*)
 
-Si ces deux conditions sont vérifiées, on a un comportement déterministe garanti.
-
-
 
 *** Exemple : un allocateur de ressources exclusif équitable sans court-circuit
 
+Exclusif, sans court-circuit : deux matériels ne peuvent pas écrire sur le bus en même temps.
 Equitable : famine impossible.
 
-Que signifie chaque état :
+On a deux coeurs.
+
+Pour rendre la famine impossible, on se propose de donner l'algorithme d'ordonnancement suivant : quand un seul des deux coeurs demande le bus, on le donne pour une durée a priori non bornée. Quand les deux demandent le bus, on l'alloue à celui qui ne l'a pas eu le dernier. Un demandeur maintient sa demande tant qu'il utilise ou veut le bus, et relâche quand il a finit de l'utiliser.
+
+Il doit toujours il y avoir un cycle de libre après l'utilisation du bus par un maître, et avant l'utilisation par un autre maître, pour éviter les courts-circuits même transitoires.
+
+L'allocateur a donc au moins deux fils en entrée, d'un bit chacun, REQ0 et REQ1, qui disent respectivement si REQ0 ou REQ1 demandent ou utilisent le bus.
+
+On imagine aussi que l'allocateur doit dire aux différents coeurs s'il leur accorde le bus. On a donc deux fils en sortie, GNT0 et GNT1 (pour grant).
+
+Il faut garder en mémoire le coeur prioritaire, qui n'a de sens que si le bus est inutilisé.
+
+On a donc quatre états, IDLE0, IDLE1, ALLOC0 et ALLOC1 qui signifient les choses suivantes :
 
 IDLE0 : le bus n'est pas alloué, et core0 est prioritaire
 IDLE1 : le bus n'est pas alloué, et core1 est prioritaire
 ALLOC0 : le bus est alloué à core0
 ALLOC1 : le bus est alloué à core1
 
-[reprendre la feuille volante]
+Puisqu'on a quatre états, on a besoin de deux bits pour les coder.
+
+#+NAME: allocsketch
+#+BEGIN_SRC dot
+  digraph alloc_hw {
+
+	  graph [splines=ortho, nodesep=0.8]
+	  node[shape=box];
+	  REQ0 [style=invis];
+	  REQ1 [style=invis];
+	  GNT0 [style=invis];
+	  GNT1 [style=invis];
+
+	  alloc [label="Allocateur de bus"];
+
+	  REQ0 -> alloc [label="REQ0\n1"];
+	  REQ1 -> alloc [label="REQ1\n1"];
+	  alloc -> GNT0 [label="GNT0\n1"];
+	  alloc -> GNT1 [label="GNT1\n1"];
+
+	  {rank=min; REQ0 REQ1};
+	  {rank=max; GNT0 GNT1};
+
+  }
+#+END_SRC
+
+#+CALL: allocsketch[:engine graph-easy :results output verbatim drawer :cmdline --as_boxart]()
+
+#+RESULTS:
+:RESULTS:
+
+
+
+              │
+              │ REQ0
+              │ 1
+              ▼
+     REQ1   ┌───────────────────┐  GNT1
+     1      │ Allocateur de bus │  1
+    ──────▶ │                   │ ──────▶
+            └───────────────────┘
+              │
+              │ GNT0
+              │ 1
+              ▼
+:END:
+
+
+#+CALL: allocsketch[:engine graphviz :file ./CM1/allocsketch.png :cmdline -Tpng]()
+
+#+RESULTS:
+[[file:./CM1/allocsketch.png]]
+
+
+Regardons maintenant comment les états s'agencent entre eux.
+
+Puisqu'on a cette prévention des court-circuits transitoires qui empêche le passage de ALLOC0 à ALLOC1, et vice versa, et puisque l'automate veut enregistrer la priorité :
+- Depuis ALLOC0, on ne peut aller que vers ALLOC0 (REQ0) ou IDLE1 (C(REQ0))
+- Depuis ALLOC1, on ne peut aller que vers ALLOC1 (REQ1) ou IDLE0 (C(REQ1))
+
+Depuis IDLE0 :
+- Soit personne ne demande (C(REQ0).C(REQ1)) auquel cas on reste dans IDLE0
+- Soit core0 demande (REQ0), auquel cas on lui donne inconditionnellement, il est prioritaire.
+- Soit core1 demande et core0 ne demande pas (C(REQ0).REQ1), alors on donne le bus à core1.
+
+Depuis IDLE1 :
+- Soit personne ne demande (C(REQ0).C(REQ1)) auquel cas on reste dans IDLE1
+- Soit core1 demande (REQ1), auquel cas on lui donne inconditionnellement, il est prioritaire.
+- Soit core0 demande et core1 ne demande pas (REQ0.C(REQ1)), alors on donne le bus à core0.
+
+On a bien la complétude et l'orthogonalité pour tous les noeuds.
+
+#+NAME: allocstates
+#+BEGIN_SRC dot
+  digraph alloc_states {
+	  node[shape=ellipse];
+	  edge[dir=both,arrowhead=normal, arrowtail=dot];
+
+	  IDLE0 [label="IDLE0\n00"];
+	  IDLE1 [label="IDLE1\n00"];
+	  ALLOC0 [label="ALLOC0\n10"];
+	  ALLOC1 [label="ALLOC1\n01"];
+
+	  ALLOC0 -> ALLOC0 [label="REQ0"];
+	  ALLOC0 -> IDLE1 [label="C(REQ0)"];
+
+	  ALLOC1 -> ALLOC1 [label="REQ1"];
+	  ALLOC1 -> IDLE0 [label="C(REQ1)"];
+
+	  IDLE0 -> IDLE0 [label="C(REQ0).C(REQ1)"];
+	  IDLE0 -> ALLOC0 [label="REQ0"];
+	  IDLE0 -> ALLOC1 [label="C(REQ0).REQ1"];
+
+	  IDLE1 -> IDLE1 [label="C(REQ0).C(REQ1)"];
+	  IDLE1 -> ALLOC1 [label="REQ1"];
+	  IDLE1 -> ALLOC0 [label="REQ0.C(REQ1)"];
+
+	  {rank=min; IDLE0 IDLE1};
+	  {rank=same; ALLOC0 ALLOC1};
+  }
+#+END_SRC
+
+#+CALL: allocstates[:engine graph-easy :results output verbatim drawer :cmdline --as_boxart]()
+
+#+RESULTS:
+:RESULTS:
+                          C(REQ0).C(REQ1)
+                        ┌─────────────────┐
+                        ▼                 │
+                      ┌─────────────────────┐
+      C(REQ1)         │        IDLE0        │
+  ┌─────────────────▶ │         00          │ ─┐
+  │                   └─────────────────────┘  │
+  │                     │                      │
+  │                     │ REQ0                 │
+  │                     ▼                      │
+  │                   ┌─────────────────────┐  │
+  │                   │       ALLOC0        │  │
+  │    ┌────────────▶ │         10          │  │
+  │    │              └─────────────────────┘  │
+  │    │                │                      │
+  │    │ REQ0.C(REQ1)   │ C(REQ0)              │
+  │    │                ▼                      │
+  │    │              ┌─────────────────────┐  │
+  │    │              │        IDLE1        │  │
+  │    └───────────── │         00          │  │
+  │                   └─────────────────────┘  │
+  │                     │                      │
+  │                     │ REQ1                 │ C(REQ0).REQ1
+  │                     ▼                      │
+  │                   ┌─────────────────────┐  │
+  │                   │       ALLOC1        │  │
+  └────────────────── │         01          │ ◀┘
+                      └─────────────────────┘
+                        ▲ REQ1            │
+                        └─────────────────┘
+:END:
+
+#+CALL: allocstates[:engine graphviz :file ./CM1/allocstates.png :cmdline -Tpng]()
+
+#+RESULTS:
+[[file:./CM1/allocstates.png]]
 
 
 **** Codage des états
@@ -134,81 +311,103 @@ ALLOC1 : le bus est alloué à core1
 | IDLE0  |  1 |  0 |   |  0 |  0 |  1 |  0 |
 | IDLE1  |  1 |  1 |   |  0 |  0 |  0 |  1 |
 
-On a le choix entre l'encodage binaire, à gauche, et l'encodage one hot, à droite.
+On a le choix entre l'encodage binaire, à gauche, et l'encodage "one hot", à droite. Celui de gauche a l'avantage de nécessiter moins de bits, mais celui de droite est préféré des outils de CAO, qui produisent des circuits un peu meilleurs avec.
 
-**** Consturction de la table de vérité
+**** Construction de la table de vérité
 
-| R1 | R0 | REQ1 | REQ0 |   | NR1 | NR0 | GNT1 | GNT0 |
+On cherche maintenant à exprimer NR0, NR1, GNT0 et GNT1 en fonction de R0, R1, REQ0 et REQ1
+
+On remplit cette table état par état.
+
+| R0 | R1 | REQ0 | REQ1 |   | NR0 | NR1 | GNT0 | GNT1 |
 |----+----+------+------+---+-----+-----+------+------|
-|  0 |  0 |    0 |    0 |   |   1 |   1 |    0 |    1 |
-|  0 |  0 |    0 |    1 |   |   0 |   0 |    0 |    1 |
-|  0 |  0 |    1 |    0 |   |   1 |   1 |    0 |    1 |
-|  0 |  0 |    1 |    1 |   |   0 |   0 |    0 |    1 |
+|  0 |  0 |    0 |    0 |   |   1 |   1 |    1 |    0 |
+|  0 |  0 |    0 |    1 |   |   1 |   1 |    1 |    0 |
+|  0 |  0 |    1 |    0 |   |   0 |   0 |    1 |    0 |
+|  0 |  0 |    1 |    1 |   |   0 |   0 |    1 |    0 |
 |----+----+------+------+---+-----+-----+------+------|
-|  0 |  1 |    0 |    0 |   |   1 |   0 |    1 |    0 |
-|  0 |  1 |    0 |    1 |   |   1 |   0 |    1 |    0 |
-|  0 |  1 |    1 |    0 |   |   0 |   1 |    1 |    0 |
-|  0 |  1 |    1 |    1 |   |   0 |   1 |    1 |    0 |
+|  0 |  1 |    0 |    0 |   |   1 |   0 |    0 |    1 |
+|  0 |  1 |    0 |    1 |   |   0 |   1 |    0 |    1 |
+|  0 |  1 |    1 |    0 |   |   1 |   0 |    0 |    1 |
+|  0 |  1 |    1 |    1 |   |   0 |   1 |    0 |    1 |
 |----+----+------+------+---+-----+-----+------+------|
 |  1 |  0 |    0 |    0 |   |   1 |   0 |    0 |    0 |
-|  1 |  0 |    0 |    1 |   |   0 |   0 |    0 |    0 |
-|  1 |  0 |    1 |    0 |   |   0 |   1 |    0 |    0 |
+|  1 |  0 |    0 |    1 |   |   0 |   1 |    0 |    0 |
+|  1 |  0 |    1 |    0 |   |   0 |   0 |    0 |    0 |
 |  1 |  0 |    1 |    1 |   |   0 |   0 |    0 |    0 |
 |----+----+------+------+---+-----+-----+------+------|
 |  1 |  1 |    0 |    0 |   |   1 |   1 |    0 |    0 |
-|  1 |  1 |    0 |    1 |   |   0 |   0 |    0 |    0 |
-|  1 |  1 |    1 |    0 |   |   0 |   1 |    0 |    0 |
+|  1 |  1 |    0 |    1 |   |   0 |   1 |    0 |    0 |
+|  1 |  1 |    1 |    0 |   |   0 |   0 |    0 |    0 |
 |  1 |  1 |    1 |    1 |   |   0 |   1 |    0 |    0 |
 |----+----+------+------+---+-----+-----+------+------|
 
 **** Simplification
 
-NR1 = C(req0).C(R1).C(R0) + C(Req0).C(Req1) + C(R1).R0.C(Req1) 
+On cherche maintenant à exprimer la table de vérité sous forme analytique.
 
-NR0 = C(Req0).Req1 + R0.Req1 + R1.R0.C(Req0) + C(R1).C(R0).C(Req0)
+Les valeurs en sortie sont les plus faciles à exprimer :
 
 GNT1 = R0.C(R1) = C(C(R0) + R1)
-
 GNT0 = C(R0).C(R1) = C(R0 + R1)
 
+(on note qu'on préfère les sommes de Boole aux produits, parce que les portes logiques OR sont moins chères en matériel que les portes AND)
 
-On va avoir besoin d'une table de Karnaugh
+Les états :
 
-NR1
+La version naïve consiste à lire toutes les lignes de la table de vérité :
 
-Lignes R1 puis R0
-Colonnes Req1 puis Req0
+NR1 = C(R0).C(R1).C(REQ0) +
+      C(R0).R1.REQ1 +
+      R0.C(R1).C(REQ0).REQ1 +
+      R0.R1.(REQ0.REQ1 + C(REQ0).C(REQ1) + C(REQ0).REQ1) 
 
-|    | 00 | 01 | 11 | 10 |
-| 00 |  1 |    |    |    |
-| 01 |    |    |    |    |
-| 11 |    |    |    |    |
-| 10 |    |    |    |    |
+NR0 = C(R0).C(R1).C(REQ0) +
+      C(R0).R1.C(REQ1) +
+      R0.C(R1).C(REQ0).C(REQ1) +
+      R0.R1.C(REQ0).C(REQ1)
+      
+(ici groupées par état actuel)
 
+On essaie, autant qu'il est possible, de simplifier cette expression.
 
-La colonne de gauche peut s'écrire :
+Une technique utilisée pour simplifier les expressions booléennes complexes est la table de Karnaugh.
 
-C(Req1) inter C(Req0)
+Le principe est relativement simple :
 
-Le bout de la première ligne s'écrit :
+En l'occurence, la valeur de l'expression booléenne dépend de la valeur de 4 bits, ce qui fait donc 16 possibilités.
 
-C(Req0) inter C(R1) inter C(R0)
+Pour NR0 :
 
-Le bout de la deuxième ligne s'écrit :
+| R\REQ | 00 | 01 | 11 | 10 |
+|    00 |  1 |  1 |  0 |  0 |
+|    01 |  1 |  0 |  0 |  1 |
+|    11 |  1 |  0 |  0 |  0 |
+|    10 |  1 |  0 |  0 |  0 |
 
-C(R1) inter R0 inter C(Req1)
+Notons que cette table est construite de manière à avoir une distance de Levenshtein de 1 entre chaque ligne et entre chaque colonne.
 
+Le but est maintenant de regrouper les 1 par groupe adjacents (carrés ou lignes) de taille de puissances de 2, sachant que les colonnes wrap (la distance de Levenshtein entre la colonne à l'extrême-gauche et la colonne à l'extrême-droite est de 1).
 
-[Refaire pareil pour NR0]
+Par exemple, ici, la colonne de gauche (4), les deux premières colonnes de la première ligne (2), et la première et la dernière colonne de la deuxième ligne (2).
 
-**** Traduire les expressions booléennes en schéma
+On peut exprimer notre expression booléenne comme une somme de ces formes :
 
-[fait au papier]
+NR0 = C(REQ0).C(REQ1) + C(R0).C(R1).C(REQ0) + C(R0).R1.C(REQ1)
 
+Pour NR1 :
 
+| R\REQ | 00 | 01 | 11 | 10 |
+|    00 |  1 |  1 |  0 |  0 |
+|    01 |  0 |  1 |  1 |  0 |
+|    11 |  1 |  1 |  1 |  0 |
+|    10 |  0 |  1 |  0 |  0 |
 
+Par exemple, ici, la deuxième colonne (4), le gros carré du milieu (4), les deux premières colonnes de la première ligne (2) et de la troisième ligne (2).
 
+NR1 = C(REQ0).REQ1 + R1.REQ1 + C(R0).C(R1).C(REQ0) + R0.R1.C(REQ0)
 
+O peut éventuellement ensuite essayer de factoriser. On prendra garde à ne pas trop factoriser non plus, une factorisation signifie des portes logiques en série (et ça on aime pas).
 
-
+Dans les faits, on laissera le soin à une machine de faire tout ça pour nous.
 

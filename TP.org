@@ -1,34 +1,40 @@
+#+TITLE : Prise de notes TP 4I106 MULTI
+#+PROPERTY: header-args :mkdirp yes
+#+STARTUP: inlineimages
 
+Alain Greiner (alain.greiner@lip6.fr)
 
 * TP 1 : 30/01/2020
 
-Introduction au Pibus
+Pour ce premier TP, on va d'intéresser au bus, qui est un bon exemple d'automate, et en particulier au Pi-bus, qui suit les règles suivantes :
 
-Bus multimaître synchrone
+Le pi-bus est un bus multimaître synchrone.
 
 Deux types de composants matériels qui doivent communiquer entre eux :
 - les maîtres sont par exemple les coeurs (et leurs caches privés)
-
-- les cibles, genre la ram, la rom, le tty
+- les cibles, comme la ram, la rom, le tty
 
 La fonction du bus, c'est l'aiguillage et le routage.
 
-On a un autre bus, le bus des réponses.
+On a avant toutes choses un bus de commandes, qui se décline en trois nappes de fils, ADDR (30 bits, puisqu'on ne ramène que des mots), OPC (4 bits), READ (1 bit).
 
-Un bus de commandes, un bus de réponses.
+Les seuls qui écrivent sur ce bus de commandes, ce sont les maîtres (et on peut d'ailleurs les définir comme ça).
 
-Un maître envoie des commandes et reçoit des réponses
+On a un deuxième bus, le bus de réponses. Ce bus est unique, il s'appelle ACK (2 bits, car on a 3 réponses possibles READY, WAIT, ERROR) et seules les cibles peuvent écrire sur ce bus (on peut d'ailleurs les définir comme ça).
 
-Une cible reçoit des commandes en envoie des réponses
+On a un bus de données qui est utilisé par les maîtres et les cibles (en effet, un maître veut pouvoir lire comme écrire).
 
 
-On a toujours besoin d'un acquittement.
 
 
 
 On a un fil req et un fil gnt par maître qui arrive au BCU, bus control unit. (un des rarissimes automates non-Moore, donc Mealy général).
 
-2n fils avec n le nombre de maîtres.
+#+NAME: pibus
+#+BEGIN_SRC dot
+
+#+END_SRC
+
 
 [dessin du pibus]
 
