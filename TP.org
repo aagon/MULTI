@@ -178,16 +178,73 @@ On n'écrit ni ne lit dans la mémoire, donc MEM_CMD est à NOP.
 
 Dans cet état, on écrit sur le bus ACK la valeur WAIT. On a donc besoin de mettre le signal ACK_VALUE à WAIT, et ACK_EN à 1.
 
-On écrit pas sur le bus de données, puisque celles-ci ne sont pas encore prêtes (on envoie WAIT pour une raison). Donc DT_EN est à 0.
+On n'écrit pas sur le bus de données, puisque celles-ci ne sont pas encore prêtes (on envoie WAIT pour une raison). Donc DT_EN est à 0.
+
+Le maître a demandé d'accéder à une zone de la mémoire en lecture, c'est donc la commande READ qu'on envoie vers la mémoire.
+
+*** Noeud R_OK
+
+Dans cet état, on écrit sur le bus ACK la valeur READY. On a donc besoin de mettre de signal ACK_VALUE à READY, et ACK_EN à 1.
+
+On écrit sur le bus de données, puisque les données sont prêtes.
+
+La commande à mettre dans MEM_CMD est ambigüe :
+- Si on admet que la mémoire n'est pas capable d'obtenir une donnée dans le même cycle pendant lequel on lui a demandé, on n'aura jamais READ en sortie sur MEM_CMD pendant qu'on envoie la donnée sur le bus.
+- Par contre, si on admet qu'elle en est capable, on a dans le même cycle READ sur MEM_CMD, puis dès la réception de la donnée (dans le même cycle donc) READY sur ACK_VALUE.
+
+La valeur de ce fil en sortie dépend du paramètre L (NOP s'il est non nul, READ s'il est nul). (attention, on ne vient pas de transformer cette machine en machine de Mealy : L est un paramètre, choisi au démarrage de la machine, qui ne change plus ensuite.)
+
+*** Noeud W_WAIT
+
+Dans cet état, on écrit sur le bus ACK la valeur WAIT. On a donc besoin de mettre le signal ACK_VALUE à READY, et ACK_EN à 1.
+
+On n'écrit pas sur le bus de données, on a reçu une instruction d'écriture, donc DT_EN est à 0.
+
+Le maître a demandé d'accéder à une zone de la mémoire en écriture, c'est donc la commande WRITE qu'on envoie vers la mémoire.
+
+*** Noeud W_OK
+
+Dans cet état, on écrit sur le bus ACK la valeur READY. On a donc besoin de mettre de signal ACK_VALUE à READY, et ACK_EN à 1.
+
+On n'écrit pas sur le bus de données, on a reçu une instruction d'écriture, donc DT_EN est à 0.
+
+Pour la même raison que pour R_OK, la valeur de MEM_CMD dépendraa du paramètre L
+
+*** Noeud ERROR
+
+Dans cet état, on écrit sur le bus ACK pour signaler l'erreur.
+
+On n'écrit pas sur le bus de données, on n'a rien à y écrire, ni aucune commande non plus à envoyer à la mémoire.
 
 *** Résumé
 
-|        | ACK_EN | ACK_VALUE | DT_EN | MEM_CMD |
-| IDLE   |      0 | NULL      |     0 | NOP     |
-| R_WAIT |      1 | WAIT      |     0 |         |
-| R_OK   |        |           |       |         |
-| W_WAIT |        |           |       |         |
-| W_OK   |        |           |       |         |
-| ERROR  |        |           |       |         |
+|        | ACK_EN | ACK_VALUE | DT_EN | MEM_CMD                   |
+|--------+--------+-----------+-------+---------------------------|
+| IDLE   |      0 | NULL      |     0 | NOP                       |
+| R_WAIT |      1 | WAIT      |     0 | READ                      |
+| R_OK   |      1 | READY     |     1 | NOP (si !L), READ (si L)  |
+| W_WAIT |      1 | WAIT      |     0 | WRITE                     |
+| W_OK   |      1 | READY     |     0 | NOP (si !L), WRITE (si L) |
+| ERROR  |      1 | ERROR     |     0 | NOP                       |
+
+
+A priori, on n'a écrit sur les bus ACK comme DT qu'au moment où on avait le droit de le faire. En effet, si on se rappelle le chronogramme du PIBUS, les différents états : R_WAIT R_OK W_WAIT W_OK ERROR n'arrivent qu'après une demande du maître. On a donc le bus réservé pour la réponse (donc aucun problème pour le bus ACK), et éventuellement le bus DT réservé si on a une donnée à transmettre.
+
+Donc notre fonction de génération ne créé pas de court-circuits.
+
+** Question D1
+
+*** Noeud INIT
+
+On passe de INIT à RAM_REQ de manière inconditionnée.
+
+Donc A = 1
+
+*** Noeud RAM_REQ
+
+
+
+
+
 
 
