@@ -414,38 +414,37 @@ Dans les faits, on laissera le soin à une machine de faire tout ça pour nous.
 
 * CM 2 : 05/02/2020
 
-Suite sur le PIBUS.
+Ce cours s'intéresse au PIBUS.
 
-*** Pourquoi le front descendant
+Une question d'un élève en particulier : pourquoi, alors qu'on a vu que seul le front montant de l'horloge avait une influence sur la mise à jour des registres, le front descendant était utilisé dans SOCLIB ?
 
-Pourquoi, dans les modèles des composants matériels systemC, on fait intervenir les fronts descendants, alors que dans les matériels on ne fait intervenir que le front montant pour la synchronisation.
+Cette question est en fait plus générale. On fait intervenir le front descendant dans tous les modèles de composants matériels systemC.
 
-En simulation, on aimerait bien que ce ne soit pas plus de 1000 fois moins bon qu'en matériel.
+Ce qui justifie un aparté un peu plus long sur les systèmes de simulation du matériel.
 
-VHDL, Verilog : description pour donner à une machine de synthèse pour le CAO.
-
-SystemC : Objectif est d'aller le plus vite possible, au prix d'une plus grande abstraction.
-
+On distinguera deux types de systèmes :
+- Les systèmes de type VHDL ou Verilog dont le but est de donner une spécification détaillée de l'architecture d'un système, de manière à ce qu'elle puisse être vérifiée et donnée à une machine de synthèse qui donnera la logique en portes (qui elle-même sera donnée à un outil de plus bas niveau encore dont le but sera de réaliser le dessin du matériel en transistor, avec des logiciels de VLSI)
+- Les systèmes de type SystemC, de plus haut niveau, dont le but n'est pas une spécification suffisemment détaillée pour une synthèse, mais bien plutôt pour une simulation rapide. Le but est de pouvoir exécuter sur notre simulation un vrai programme, de manière à avoir une idée exacte du déroulement et du temps pris par un calcul. Pour cette raison là, on aimerait bien que la simulation ne soit pas pire que 1000 fois moins bonne qu'en matériel.
 
 ** La modélisation en systemC : le modèle des automates d'états finis communicants synchrones
 
-Tout système peut être décrit comme un ensemble de boîtes, avec dedans un registre de taille arbitraire (pas trop gros non plus, on veut que ce soit lisible).
+Tout système peut être décrit comme un ensemble de boîtes, avec dedans un registre de taille arbitraire.
 
-On associe une classe à chaque composant matériel interconnectable.
+SystemC n'est pas à proprement parler un langage de programmation, c'est un ensemble de classes C++.
 
-Un fil est un signal.
+L'idée est d'associer une classe à chaque composant matériel interconnectable.
 
-Les variables membres d'une classe sont de 2 types :
-- les variables définissant l'état interne (les registres, préfixé par r_)
+Dans une classe représentant un matériel, les variables membres sont de 2 types :
+- les variables définissant l'état interne (les registres, préfixés par r_)
 - les constantes structurelles (dans le constructeur de l'objet, constantes) (préfixées par m_)
 
 Pour définir le comportement d'un certain composant matériel, on écrit deux méthodes :
-- la fonction de transition (calcule la valeur future des registres internes) (en fonction des valeurs présentes des registres et des signaux en entrée)
-- la fonction de génération (calcule la valeur des signaux en sortie) ()
+- la fonction de transition (calcule la valeur future des registres internes) (en fonction des valeurs présentes des registres et des signaux en entrée).
+- la fonction de génération genMoore (calcule la valeur des signaux en sortie).
 
-systemC fournit un type supplémentaire : sc_signal qui donne la sémantique de la mise à jour retardée.
+systemC permet de retarder la mise à jour d'une valeur, chose dont on peut avoir besoin pour représenter les valeurs des fils en sortie (appelés signaux). C'est le type sc_signal qui donne la sémantique de la mise à jour retardée de la valeur, retardée au amoins jusqu'à la sortie de la fonction.
 
-Quel sera le moteur de simulation ?
+Quel sera le moteur de simulation ? (une grosse boucle)
 
 #+BEGIN_SRC c
   while (cycle < MAX) {
@@ -464,9 +463,9 @@ L'ordre n'a pas d'importance, grâce au type sc_signal.
 
 On doit juste prendre garde à bien mettre la mise à jour des registres avant de calculer et balancer les signaux de sortie.
 
-Pour ça, on évalue les transitions sur les fronts montants, et les générations sur les fronts descendants.
+Pour ça, on évalue les transitions sur les fronts montants, et les générations sur les fronts descendants : c'est pour cette raison que systemC fait intervenir les fronts descendants.
 
-*** Ajouter un automate de Mealy
+*** Ajouter un automate de Mealy ?
 
 On va toujours avoir affaire à un petit nombre d'automates de Mealy.
 
@@ -479,9 +478,23 @@ liste de sensibilités :
 
 On doit rajouter les fonctions de Mealy à la fin de la grosse boucle. Par contre, leur ordre importe maintenant.
 
+#+BEGIN_SRC c
+  while (cycle < MAX) {
+	  Transition(0);
+	  Transition(1);
+	  Transition(2);
+	  Transition(3);
+	  GenMoore(0);
+	  GenMoore(1);
+	  GenMoore(2);
+	  GenMealy(3);
+  }
+#+END_SRC
+
+
 ** Automates, suite
 
-Le BCU, qui se trouve être un automate de Mealy.
+On s'intéresse à un nouvel automate, le BCU, qui se trouve être un automate de Mealy. Pourquoi ? Parce qu'il doit répondre au maître *dans le même cycle* que la demande de ce dernier, il répond donc de manière asynchrone aux mises à jour des registres, donc du front d'horloge montant.
 
 BCU prend en entrée:
 - le signal A (l'adresse) sur 30 bits
@@ -508,7 +521,79 @@ Il faut bien donner la signification de chaque état, il ne faut pas être pares
 
 La fonction de génération :
 
+#+NAME: bcu
+#+BEGIN_SRC dot
+  digraph bcu {
+	  node[shape=ellipse];
+	  edge[dir=both, arrowhead=normal, arrowtail=dot];
+
+	  IDLE [label="IDLE"];
+	  AD [label="AD"];
+	  DTAD [label="DT/AD"];
+	  DT [label="DT"];
+
+	  IDLE -> IDLE [label="C(REQ)"];
+	  IDLE -> AD [label="REQ"];
+
+	  AD -> DTAD [label="LOCK"];
+	  AD -> DT [label="C(LOCK)"];
+
+	  DTAD -> DTAD [label="WAIT+LOCK"];
+	  DTAD -> DT [label="C(LOCK).C(WAIT)"];
+
+	  DT -> DT [label="WAIT"];
+	  DT -> AD [label="C(WAIT).REQ"];
+	  DT -> IDLE [label="C(WAIT).C(REQ)"];
+  }
+#+END_SRC
+
+
+#+CALL: bcu[:engine graph-easy :results output verbatim drawer :cmdline --as_boxart]()
+
+Attention, le graphe produit par graph-easy est faux.
+
+#+RESULTS:
+:RESULTS:
+    C(REQ)      ┌──────────────────┐
+  ┌──────────── │                  │
+  │             │       IDLE       │  C(WAIT).C(REQ)
+  └───────────▶ │                  │ ◀───────────────────┐
+                └──────────────────┘                     │
+                  │                                      │
+                  │ REQ                                  │
+                  ▼                                      │
+                ┌──────────────────┐                     │
+  ┌───────────▶ │        AD        │ ─┐                  │
+  │             └──────────────────┘  │                  │
+  │               │                   │                  │
+  │ C(WAIT).REQ   │ LOCK              │                  │
+  │               ▼                   │                  │
+  │             ┌──────────────────┐  │                  │
+  │             │      DT/AD       │  │                  │
+  │             └──────────────────┘  │                  │
+  │               │                   │                  │
+  │               │ C(LOCK).C(WAIT)   │ C(LOCK)          │
+  │               ▼                   ▼                  │
+  │             ┌──────────────────────────────────────────┐   WAIT
+  │             │                                          │ ───────┐
+  │             │                    DT                    │        │
+  └──────────── │                                          │ ◀──────┘
+                └──────────────────────────────────────────┘
+:END:
+
+
+
+#+CALL: bcu[:engine graphviz :file ./CM2/bcu.png :cmdline -Tpng]()
+
+#+RESULTS:
+[[file:./CM2/bcu.png]]
+
+
 *** Comment spécifier la fonction de génération
+
+Puisqu'on a affaire à un automate de Mealy, on ne peut plus se contenter de mettre les sorties avec les étiquettes des états (à moins de les conditionner explicitement, ce qui peut alourdir le graphe).
+
+La solution naturelle, c'est la table de vérité.
 
 |       | GNT | SEL0         | SEL1          |
 |-------+-----+--------------+---------------|
