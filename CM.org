@@ -411,3 +411,112 @@ O peut éventuellement ensuite essayer de factoriser. On prendra garde à ne pas
 
 Dans les faits, on laissera le soin à une machine de faire tout ça pour nous.
 
+
+* CM 2 : 05/02/2020
+
+Suite sur le PIBUS.
+
+*** Pourquoi le front descendant
+
+Pourquoi, dans les modèles des composants matériels systemC, on fait intervenir les fronts descendants, alors que dans les matériels on ne fait intervenir que le front montant pour la synchronisation.
+
+En simulation, on aimerait bien que ce ne soit pas plus de 1000 fois moins bon qu'en matériel.
+
+VHDL, Verilog : description pour donner à une machine de synthèse pour le CAO.
+
+SystemC : Objectif est d'aller le plus vite possible, au prix d'une plus grande abstraction.
+
+
+** La modélisation en systemC : le modèle des automates d'états finis communicants synchrones
+
+Tout système peut être décrit comme un ensemble de boîtes, avec dedans un registre de taille arbitraire (pas trop gros non plus, on veut que ce soit lisible).
+
+On associe une classe à chaque composant matériel interconnectable.
+
+Un fil est un signal.
+
+Les variables membres d'une classe sont de 2 types :
+- les variables définissant l'état interne (les registres, préfixé par r_)
+- les constantes structurelles (dans le constructeur de l'objet, constantes) (préfixées par m_)
+
+Pour définir le comportement d'un certain composant matériel, on écrit deux méthodes :
+- la fonction de transition (calcule la valeur future des registres internes) (en fonction des valeurs présentes des registres et des signaux en entrée)
+- la fonction de génération (calcule la valeur des signaux en sortie) ()
+
+systemC fournit un type supplémentaire : sc_signal qui donne la sémantique de la mise à jour retardée.
+
+Quel sera le moteur de simulation ?
+
+#+BEGIN_SRC c
+  while (cycle < MAX) {
+	  Transition(0);
+	  Transition(1);
+	  Transition(2);
+	  Transition(3);
+	  GenMoore(0);
+	  GenMoore(1);
+	  GenMoore(2);
+	  GenMoore(3);
+  }
+#+END_SRC
+
+L'ordre n'a pas d'importance, grâce au type sc_signal.
+
+On doit juste prendre garde à bien mettre la mise à jour des registres avant de calculer et balancer les signaux de sortie.
+
+Pour ça, on évalue les transitions sur les fronts montants, et les générations sur les fronts descendants.
+
+*** Ajouter un automate de Mealy
+
+On va toujours avoir affaire à un petit nombre d'automates de Mealy.
+
+On enrichit la classe, et on différencie genMoore et genMealy.
+
+liste de sensibilités :
+- transition : front montant
+- genMoore : front descendant
+- genMealy : front descendant et E' (les entrées qui participent à la génération de Mealy)
+
+On doit rajouter les fonctions de Mealy à la fin de la grosse boucle. Par contre, leur ordre importe maintenant.
+
+** Automates, suite
+
+Le BCU, qui se trouve être un automate de Mealy.
+
+BCU prend en entrée:
+- le signal A (l'adresse) sur 30 bits
+- le signal LOCK sur 1 bit
+- le signal ACK sur 2 bits
+
+en sortie :
+- le signal GNT (grant) sur 1 bit
+- le signal SEL0 sur 1 bit
+- le signal SEL1 sur 1 bit
+
+Quels sont les états de cet automate :
+
+- Un état IDLE : on n'a pas de REQ au cycle précédent (soit bus non alloué)
+- Un état AD : le bus a été alloué, et c'est la première commande
+
+Le maître ne se répètera pas, la cible doit prendre et enregistrer la commande.
+
+- Un état DT/AD : la commande précédente n'était pas la dernière et on attend la réponse à cette commande précédente.
+
+- Un état DT : la commande précédente était la dernière et le maître et le BCU attendent la réponse
+
+Il faut bien donner la signification de chaque état, il ne faut pas être paresseux, il faut écrire.
+
+La fonction de génération :
+
+*** Comment spécifier la fonction de génération
+
+|       | GNT | SEL0         | SEL1          |
+|-------+-----+--------------+---------------|
+| IDLE  | REQ | 0            | 0             |
+| AD    |   0 | DEC(A) = RAM | DEC(A) ne RAM |
+| DT/AD |   0 | DEC(A) = RAM | DEC(A) ne RAM |
+| AD    | REQ | 0            | 0             |
+
+
+
+
