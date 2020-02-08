@@ -242,6 +242,172 @@ Donc A = 1
 
 *** Noeud RAM_REQ
 
+* TP 2 : 07/02/2020
+
+*** Question C1
+
+On a direct mapping, soit icache_ways = 1
+
+On a 16 octets par ligne de cache, soit 4 mots, donc icache_words = 4
+
+1024 / 16, soient 64 lignes, donc icache_sets = 64
+
+*** Question C2
+
+Il faut pouvoir garantir que la machine rebootera après un arrêt intempestif.
+
+Pour que notre automate soit déterministe, il faut qu'il ait un unique état initial connu et constant.
+
+Cet état initial est donné par le contenu du segment seg_reset.
+
+Il faut absolument que ce segment mappe vers une zone de la mémoire en lecture seule.
+
+*** Question C3
+
+Le segment seg_tty doit être non cachable, parce que les caractères affichés dans le terminal doivent toujours correspondre effectivement à ce que le processeur connaît.
+
+Le cache permet que ces deux valeurs soient différentes, même transitoirement, et c'est inacceptable.
+
+*** Question C4
+
+Les segments protégés sont :
+- seg_reset
+- seg_kcode
+- seg_kdata
+- seg_kdata
+- seg_tty
+
+On le repère à ce que ils font partie des adresses hautes (bit de poids fort à 1).
+
+*** Question D1
+
+Le programme utilisateur doit donner au noyau :
+- la référence de l'appel système qu'il appelle
+- les paramètres
+
+La première information est facile à transmettre :
+Les noms et les comportements des appels systèmes sont réputés connus de l'utilisateur : il suffit de passer un nom, et le noyau a une liste statique des appels systèmes. Il cherche dans sa liste et trouve (ou non, auquel cas il rend une erreur)
+
+La deuxième information est un peu plus délicate à transmettre : le noyau et le userspace n'ont pas la même pile : le noyau, qui a tous les droits, peut aller chercher les arguments directement dans la pile utilisateur du processus qui a fait l'appel système (c'est ce que faisait unix v5).
+
+Sinon, comme c'est le cas ici, on peut stocker les arguments dans des registres visibles du processeur. Cette technique suppose une quantité limitée d'arguments.
+
+*** Question D2
+
+Le tableau _cause_vector contient les raisons d'entrée en mode noyau. Il est initialisé dans le fichier exc_handler.c.
+
+Le tableau _syscall_vector contient les adresses des handlers des appels systèmes. Il est initialisé dans le fichier sys_handler.c.
+
+D'après le code assembleur de la fonction _sys_handler, les handlers des appels systèmes sont indexés par leurs 5 bits de poids faible (donc 32 handlers) :
+
+#+BEGIN_SRC mips
+	  andi        $26,$2,0x1F
+#+END_SRC
+
+*** Question D3
+
+Dans l'ordre :
+
+L'utilisateur appelle la fonction utilisateur proctime().
+
+La fonction proctime() appelle la fonction inlinée sys_call(), avec comme premier argument 0x01, soit l'index de la fonction *noyau* _proctime() dans le tableau _syscall_vector.
+
+La fonction syscall() enregistre dans des registres du processeur les arguments de la fonction, et il appelle l'instruction MIPS "syscall".
+
+On imagine seulement que cette instruction permet de passer en mode noyau (donc de rendre accessible des instructions processeur et des adresses), et de jump à une adresse bien précise. Ce passage en mode noyau se fait au moyen d'une trappe, soit d'une interruption matérielle.
+
+On fait l'hypothèse, appuyée sur le code, qu'on saute à l'adresse 0x80000000, soit l'adresse de la fonction assembleur _giet. Cette fonction assembleur du noyau a pour but de regarder quelle est la cause de l'interruption matérielle. Il se trouve que la cause de l'interruption matérielle courante suppose l'appel à la fonction assembleur _sys_handler.
+
+_sys_handler saute vers la fonction _proctime :
+
+#+BEGIN_SRC mips
+	  jalr        $3
+	  mtc0        $0,$12                 
+#+END_SRC
+
+(on est en MIPS 32 bits, avec 5 étages de pipeline et un delayed slot : la désactivation des interruptions est lancée avant le passage à la fonction)
+
+La fonction _proctime consiste en une ligne d'assembleur, qui va lire le contenu du registre $9 du coprocesseur 0, censé apparemment contenir le nombre de cycles de processeurs écoulés depuis le démarrage de la machine (on ne sait pas trop comment, le code ne permet pas de le dire).
+
+Cette valeur est copiée dans une variable de la pile, appelée ret. Cette variable est retournée par la fonction.
+
+On se retrouve à la ligne suivante :
+
+#+BEGIN_SRC mips
+	  lw          $26,16($29)
+	  mtc0        $26,$12
+#+END_SRC
+
+La fin de la fonction restaure les pointeurs de pile et d'instructions.
+
+On se retrouve en mode utilisateur, à la fin de la fonction sys_call().
+
+Qui retourne la valeur qui a été opportunément placée dans la pile au bon endroit (dans la variable reg_no_and_output).
+
+On se trouve à la fin de la fonction proctime().
+
+*** Question D4
+
+Cet appel système dont on vient de détailler le déroulement a le coût en *instructions* suivant :
+
+Le branchement est fait dans proctime().
+
+On charge dans les registres les 5 paramètres (5 LW)
+On exécute l'instruction assembleur syscall (1 instruction)
+On exécute les 6 instructions assembleur de _giet (6 instructions)
+On exécute les 17 instructions assembleur de _sys_handler jusqu'au jalr (17 instructions)
+On exécute l'unique instruction assembleur de la fonction _proctime (1 instruction)
+
+(dans les faits, on va devoir compiler, puis regarder l'assembleur produit par le compilateur)
+
+*** Question E1
+
+Le code de boot doit être exécuté en mode superviseur parce que le boot consiste entre autres à charger le code du noyau en mémoire centrale, et en zone noyau de la mémoire centrale. Pour accéder en écriture à cette zone, on doit être en mode noyau.
+
+Dans notre cas, quand bien même on suppose le code du noyau déjà chargé en mémoire au démarrage de la machine, on est quand même censé manipuler des registres, comme le registre SR, qui n'est accessible qu'en mode noyau.
+
+*** Question E2
+
+Le point d'entrée du code applicatif doit se trouver au début du segment seg_data_base (soit)
+
+
+*** Question E3
+
+Si les adresses définies dans ces deux fichiers ne sont pas égales entre elles, le logiciel essaiera d'accéder à des adresses erronnées, puisque la base des segments pour le logiciel ne sera pas la même que la base des segments pour le matériel.
+
+*** Question E4
+
+Le segment seg_reset contient le code de la fonction assembleur reset.
+Le segment seg_kcode contient le code de la fonction assembleur giet (le point d'entrée du noyau) et le code des sections .text (qui est en fait ) de tous les codes objets produits à partir des sources compilées.
+
+*** Question E5
+
+D'après le fichier sys.bin.txt, le segment seg_reset va des adresses [0xbfc00000 ; 0xbfc00023], soit 36 octets.
+
+D'après le fichier sys.bin.txt, le segment seg_kcode effectivement occupé va des adresses [0x80000180 ; 0x8000227c] compris, soit :
+
+8448 octets
+
+*** Question E6
+
+#+BEGIN_SRC c
+  #include "stdio.h"
+
+  __attribute__((constructor)) void main()
+  {
+	  char c;
+	  char s[] = "\n Hello World! \n";
+
+	  while (1) {
+		  tty_puts(s);
+		  tty_getc(&c);
+	  }
+  }
+#+END_SRC
+
+
+*** Question E7
+
 
 
 
