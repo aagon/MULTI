@@ -548,41 +548,6 @@ La fonction de génération :
 #+END_SRC
 
 
-#+CALL: bcu[:engine graph-easy :results output verbatim drawer :cmdline --as_boxart]()
-
-Attention, le graphe produit par graph-easy est faux.
-
-#+RESULTS:
-:RESULTS:
-    C(REQ)      ┌──────────────────┐
-  ┌──────────── │                  │
-  │             │       IDLE       │  C(WAIT).C(REQ)
-  └───────────▶ │                  │ ◀───────────────────┐
-                └──────────────────┘                     │
-                  │                                      │
-                  │ REQ                                  │
-                  ▼                                      │
-                ┌──────────────────┐                     │
-  ┌───────────▶ │        AD        │ ─┐                  │
-  │             └──────────────────┘  │                  │
-  │               │                   │                  │
-  │ C(WAIT).REQ   │ LOCK              │                  │
-  │               ▼                   │                  │
-  │             ┌──────────────────┐  │                  │
-  │             │      DT/AD       │  │                  │
-  │             └──────────────────┘  │                  │
-  │               │                   │                  │
-  │               │ C(LOCK).C(WAIT)   │ C(LOCK)          │
-  │               ▼                   ▼                  │
-  │             ┌──────────────────────────────────────────┐   WAIT
-  │             │                                          │ ───────┐
-  │             │                    DT                    │        │
-  └──────────── │                                          │ ◀──────┘
-                └──────────────────────────────────────────┘
-:END:
-
-
-
 #+CALL: bcu[:engine graphviz :file ./CM2/bcu.png :cmdline -Tpng]()
 
 #+RESULTS:
@@ -595,12 +560,12 @@ Puisqu'on a affaire à un automate de Mealy, on ne peut plus se contenter de met
 
 La solution naturelle, c'est la table de vérité.
 
-|       | GNT | SEL0         | SEL1          |
-|-------+-----+--------------+---------------|
-| IDLE  | REQ | 0            | 0             |
-| AD    |   0 | DEC(A) = RAM | DEC(A) ne RAM |
-| DT/AD |   0 | DEC(A) = RAM | DEC(A) ne RAM |
-| AD    | REQ | 0            | 0             |
+|       | GNT         | SEL0         | SEL1          |
+|-------+-------------+--------------+---------------|
+| IDLE  | REQ         | 0            | 0             |
+| AD    | 0           | DEC(A) = RAM | DEC(A) ne RAM |
+| DT/AD | 0           | DEC(A) = RAM | DEC(A) ne RAM |
+| DT    | REQ.C(WAIT) | 0            | 0             |
 
 
 
