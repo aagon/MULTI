@@ -570,3 +570,30 @@ La solution naturelle, c'est la table de vérité.
 
 
 
+
+* CM 3 : 12/02/2020
+
+La notion de cachabilité ne vient pas du processeur, elle est définie dans le système mémoire.
+
+Qui décide des adresses des périphérique, qui sont codées dans le BCU ? Cette information est en général codée en dur. Comment les pilotes font-ils pour la connaître ? Découverte lors de l'énumération, par essai et erreur.
+
+On va passer les deux prochaines semaines sur les caches.
+
+** Caches de premier niveau
+
+Doit être capable de répondre en moins d'un cycle (entre le début et la fin) sur les requêtes en lecture.
+
+Le but est de réduire le coût en cycles de gel des lectures d'instruction ou de données.
+
+En moyenne, de l'ordre de 10% des instructions sont des écritures, 20% sont des lectures de données.
+
+Soit un rapport de 12 lectures pour une écriture.
+
+Mais on a un rapport de 0,5 lectures pour une écriture sur le bus : le cache a manifestement fait son travail.
+
+98% des requêtes d'instruction et 95% des requêtes de données n'ont pas besoin d'un accès au bus.
+
+Une ligne de cache est une tranche de l'espace d'adressage de taille fixe, puissance de deux, alignée (l'adresse du premier octet est un multiple de la taille).
+
+Les caches de premier niveau pour les caches scalaires sont blocants.
+
