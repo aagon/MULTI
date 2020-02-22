@@ -1610,9 +1610,17 @@ En développant, on garde bien la complétude et l'orthogonalité.
 
 *** Question F1
 
-Le tampon d'écriture postée est de petite taille par rapport au cache, il se remplit donc plus vite. Pour cette raison, on le rend prioritaire.
+Ici, on peut répondre différemment selon les hypothèses qu'on fait sur le tampon d'écritures postées.
 
-Les programmes ont aussi tendance à faire les lw avant les sw, ce qui fait qu'un programme a déjà du matériau en réserve pour travailler quand le tampon d'écriture se met à monopoliser le bus. On espère que le prochain miss arrivera le plus tard possible après le début de cette monopolisation. D'une certaine manière, les effets vicieux de cette monopolisation sont un peu mitigés par l'ordre "naturel" des programmes.
+Quand on fait une lecture de données, prend-on la peine de vérifier le tampon d'écritures postéées, pour voir si par hasard la dernière version de la donnée ne s'y trouverait pas ?
+
+Si non, alors ne pas rendre les écritures prioritaires sur le bus revient à immédiatement violer la consistance mémoire. On est obligé de rendre les écritures absolument prioritaires, simplement pour garantir la consistance.
+
+Si en revanche on suppose que cette vérification est faite, on peut trouver aussi des raisons certes un peu plus faibles :
+
+Le tampon d'écritures postées est de petite taille par rapport au cache (conséquent nécessaire de la vérification du tampon d'écritures postées !), il se remplit donc plus vite. Pour cette raison, on pourrait avoir envie de le rendre prioritaire.
+
+Les programmes ont aussi tendance à faire les lw avant les sw, ce qui fait qu'un programme a déjà du matériau en réserve pour travailler quand le tampon d'écritures se met à monopoliser le bus. On espère que le prochain miss arrivera le plus tard possible après le début de cette monopolisation. D'une certaine manière, les effets vicieux de cette monopolisation sont un peu mitigés par l'ordre "naturel" des programmes.
 
 L'inconvénient est évident, ce sont les famines potentielles pour les caches d'instructions et de données qui veulent accéder au bus. Ces famines sont ceci étant dit limitées d'elles-même. Si on ne peut plus chercher des instructions, le tampon d'écriture postées va se vider très vite, puisque rien ne peut plus le venir remplir.
 
@@ -1828,4 +1836,123 @@ La première instruction de la première itération de la boucle était rentrée
 Ce qui nous fait 336 - 71 = 265 cycles, ce qui est assez proche de ce qu'on avait prévu.
 
 On a 265 cycles pour 140 instructions, soit un CPI constaté de 1.9, ce qui est bien mieux (la différence s'explique encore une fois par le tampon d'écriture postée, mais elle est plus faible que dans l'exécution non-optimisée parce qu'on a volontairement sous-estimé l'effet de nos optimisations en prenant un coût en cycles de gel moyen de 9 alors qu'il est en fait plus proche de 13).
+
+
+* TP 4 : 21/02/2020
+
+** Système mémoire presque parfait
+
+*** Question C1
+
+On se propose, pour mesurer le temps d'exécution, de regarder le contenu du pseudo-registre c_total_cycles qui est gentiment affiché dans le pseudo-tty à la fin du calcul
+
+Avec 256 sets, 16 mots par ligne, un degré d'associativité de 4, et un tampon d'écritures postées de 8 mots, le programme se termine à la fin du cycle 74502.
+
+*** Question C2
+
+Maintenant qu'on connaît le nombre de cycles nécessaires pour terminer le calcul, on peut demander 75000 cycles, et une période d'échantillonnage des statistiques de 1000.
+
+Sur la totalité du calcul, on a un taux de miss sur le cache d'instructions de 0,06 %, et un taux de miss sur le cache de données de 0,1 %.
+
+Si on regarde la totalité du calcul, les taux de miss sont décroissants [insérer graphique].
+
+Si on regarde en particulier les 1000 premiers cycles, on a une décroissance, puis une stagnation, puis une décroissance à nouveau [insérer graphique].
+
+
+Le CPI est aussi décroissant.
+
+
+*** Question C3
+
+Citer le code source, en donner la signification.
+
+** Influence de la capacité du cache d'instructions.
+
+
+*** Question D1
+
+| Nombre de sets |  Durée | Taux de MISS | Coût de MISS | CPI |
+|----------------+--------+--------------+--------------+-----|
+|            256 |  85956 |              |              |     |
+|             64 | 106270 |              |              |     |
+|             16 |        |              |              |     |
+|              4 |        |              |              |     |
+|              1 |        |              |              |     |
+
+
+*** Question D2
+
+Parce qu'on exécute pas le même programme, peut-être.
+
+ce programme fait beaucoup plus d'entrées/sorties.
+
+
+Le coût du miss qui est donné est une moyenne. Une moyenne de valeurs entières peut parfaitement être une valeur non entière.
+
+Le remplissage du tampon d'écritures postées influera sur les coûts de tous les miss. Donc le coût du miss sera variable.
+
+
+** Influence de la largeur de la ligne de cache
+
+
+| ISETS | IWORDS |  Durée |
+|-------+--------+--------|
+|   256 |      1 | 193355 |
+|   128 |      2 | 148381 |
+|    64 |      4 | 130274 |
+|    32 |      8 | 124855 |
+|    16 |     16 | 129468 |
+|     8 |     32 | 149237 |
+
+La configuration la plus efficace, c'est 32 sets de 8 mots, soit 32 sets de 32 octets chacun.
+
+Si on augmente la taille de la ligne, on espère faire diminuer le taux de miss, mais on augmente le coût d'un miss.
+Si on diminue la taille de la ligne, on espère faire diminuer le coût de miss, mais on augmente le taux d'un miss.
+
+Le coût effectif du miss en nombre de cycles étant le produit du taux et du coût par miss, il est logique, par raison mathématique (on parle d'une fonction quadratique), que la configuration optimale sera sur les valeurs médianes.
+
+[On va faire un joli graphique]
+
+** Influence de la capacité du cache de données
+
+| DSETS |  Durée | Taux miss D | Coût miss D |  CPI |
+|-------+--------+-------------+-------------+------|
+|   256 |  74553 | 0.2 %       |        17.7 | 1.32 |
+|    64 |  74638 | 0.2 %       |        17.8 | 1.32 |
+|    16 |  94444 | 7.1 %       |        18.4 | 1.68 |
+|     4 | 144880 | 22.3 %      |       16.77 | 2.56 |
+|     1 | 218474 | 38.0 %      |        15.8 | 3.86 |
+
+On peut faire un joli graphique.
+
+** Influence de la profondeur du tampon d'écritures postées
+
+*** Question G1
+
+Le tampon d'écritures postées est un canal de communication FIFO à N cases.
+
+Dans le tampon, on doit stocker :
+- un bit de validité pour chaque case
+- 30 bits d'adresse
+- 4 bits de byte enable
+- 32 bits de données (un mot)
+
+Si le processeur fait une requête d'écriture alors que le tampon d'écritures postées est plein, le processeur se gèle.
+
+Si le processeur fait une requête de lecture qui fait miss alors que le tampon d'écritures postées est non-vide, le processeur se gèle jusqu'à ce que son cache lui donne la donnée, ce qui suppose que le cache (d'instructions ou de données) obtienne le bus, ce qui suppose que le tampon d'écritures postées se soit vidé au préalable.
+
+On a ce comportement parce que les écritures sont prioritaires, et les écritures sont prioritaires pour assurer la consistance mémoire.
+
+*** Question G2
+
+| WBUF | Durée |  CPI | Coût écriture | Fréquence écritures |
+|------+-------+------+---------------+---------------------|
+|    1 | 77624 | 1.37 |          0.51 | 12.5 %              |
+|    2 | 75396 | 1.33 |          0.13 | 12.5 %              |
+|    4 | 74502 | 1.32 |             0 | 12.5 %              |
+|    8 | 74502 | 1.32 |             0 | 12.5 %              |
+
+Le coût des écritures, c'est le nombre de cycles de gel moyen occasionné par une écriture.
+
+Ce coût est très faible, parce que pour occasionner un cycle de gel, il faut remplir le tampon. Puisque la vidange du tampon est prioritaire par rapport aux lectures, le tampon d'écritures postés n'occasionne de cycle de gel que si on a plus de n écritures consécutives avec n la taille du tampon. La probabilité d'avoir ces n écritures consécutives est en fait très faible (rappelons que en moyenne 10 % des instructions sont des instructions d'écriture), et diminue avec n augmentant.
 

@@ -597,3 +597,33 @@ Une ligne de cache est une tranche de l'espace d'adressage de taille fixe, puiss
 
 Les caches de premier niveau pour les caches scalaires sont blocants.
 
+
+* CM 4 : 19/02/2020
+
+Petit aparté sur le nommage des registres. On a des petites mnémoniques.
+
+Lectures d'instruction incachables. Dans la plupart des vraies machines, on fait des vérifications. On veut pouvoir vérifier que le cache L1 fonctionne, donc on veut pouvoir le désactiver.
+
+La consistance mémoire : fournir la garantie que les accès à la mémoire de données (lw et sw) vont être faits strictement dans l'ordre du programme.
+
+Pourquoi les écritures sont prioritaires ? (ce sont les lectures qui sont bloquantes).
+On ne vérifie pas ce qu'il y a dans le write buffer (Pirouz avait dit que oui, c'est précisément pourquoi on limite la taille du tampon d'écriture postée)
+Si effectivement on ne vérifie pas le tampon d'écriture postée, alors ne pas rendre les écritures prioritaires revient à violer la consistance de la mémoire.
+
+Pour réduire la quantité des écritures sur le bus ?
+Write-back, efficace sur les écritures sur la même variable.
+
+Le coût principal du cache, c'est la cohérence.
+
+Obsolescence du cache : la valeur du cache n'est plus à jour par rapport à la valeur contenue dans la mémoire.
+
+Obsolescence de la mémoire : la valeur contenue dans la mémoire n'est plus à jour par rapport à la valeur contenue dans un des caches L1.
+
+Dès qu'il y a plus de deux composants matériels qui peuvent écrire en mémoire, on peut avoir plusieurs copies différentes de la même donnée.
+
+Garantir la cohérence consiste à conserver un invariant, 
+Dans le cas du write-back : non répliqué dans un L1, répliquée N fois non modifié, répliqué une fois modifiée
+Dans le cas du write-through : non répliqué, répliquée N fois non modifiée
+
+
+
