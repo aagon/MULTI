@@ -1,0 +1,153 @@
+
+main.o:     file format elf32-littlemips
+
+
+Disassembly of section .text:
+
+00000000 <sum>:
+   0:	27bdffe8 	addiu	sp,sp,-24
+   4:	afbf0014 	sw	ra,20(sp)
+   8:	afbe0010 	sw	s8,16(sp)
+   c:	03a0f025 	move	s8,sp
+  10:	afc40018 	sw	a0,24(s8)
+  14:	8fc20018 	lw	v0,24(s8)
+  18:	14400004 	bnez	v0,2c <sum+0x2c>
+  1c:	00000000 	nop
+  20:	8fc20018 	lw	v0,24(s8)
+  24:	10000009 	b	4c <sum+0x4c>
+  28:	00000000 	nop
+  2c:	8fc20018 	lw	v0,24(s8)
+  30:	2442ffff 	addiu	v0,v0,-1
+  34:	00402025 	move	a0,v0
+  38:	0c000000 	jal	0 <sum>
+  3c:	00000000 	nop
+  40:	00401825 	move	v1,v0
+  44:	8fc20018 	lw	v0,24(s8)
+  48:	00621021 	addu	v0,v1,v0
+  4c:	03c0e825 	move	sp,s8
+  50:	8fbf0014 	lw	ra,20(sp)
+  54:	8fbe0010 	lw	s8,16(sp)
+  58:	27bd0018 	addiu	sp,sp,24
+  5c:	03e00008 	jr	ra
+  60:	00000000 	nop
+
+00000064 <main>:
+  64:	27bdff68 	addiu	sp,sp,-152
+  68:	afbf0094 	sw	ra,148(sp)
+  6c:	afbe0090 	sw	s8,144(sp)
+  70:	03a0f025 	move	s8,sp
+  74:	afc00010 	sw	zero,16(s8)
+  78:	10000018 	b	dc <main+0x78>
+  7c:	00000000 	nop
+  80:	8fc40010 	lw	a0,16(s8)
+  84:	0c000000 	jal	0 <sum>
+  88:	00000000 	nop
+  8c:	00401825 	move	v1,v0
+  90:	8fc20010 	lw	v0,16(s8)
+  94:	00021080 	sll	v0,v0,0x2
+  98:	27c40010 	addiu	a0,s8,16
+  9c:	00821021 	addu	v0,a0,v0
+  a0:	ac430004 	sw	v1,4(v0)
+  a4:	8fc20010 	lw	v0,16(s8)
+  a8:	00021080 	sll	v0,v0,0x2
+  ac:	27c30010 	addiu	v1,s8,16
+  b0:	00621021 	addu	v0,v1,v0
+  b4:	8c420004 	lw	v0,4(v0)
+  b8:	00403025 	move	a2,v0
+  bc:	8fc50010 	lw	a1,16(s8)
+  c0:	3c020000 	lui	v0,0x0
+  c4:	24440000 	addiu	a0,v0,0
+  c8:	0c000000 	jal	0 <sum>
+  cc:	00000000 	nop
+  d0:	8fc20010 	lw	v0,16(s8)
+  d4:	24420001 	addiu	v0,v0,1
+  d8:	afc20010 	sw	v0,16(s8)
+  dc:	8fc20010 	lw	v0,16(s8)
+  e0:	2842001e 	slti	v0,v0,30
+  e4:	1440ffe6 	bnez	v0,80 <main+0x1c>
+  e8:	00000000 	nop
+  ec:	0c000000 	jal	0 <sum>
+  f0:	00000000 	nop
+  f4:	00402825 	move	a1,v0
+  f8:	3c020000 	lui	v0,0x0
+  fc:	24440010 	addiu	a0,v0,16
+ 100:	0c000000 	jal	0 <sum>
+ 104:	00000000 	nop
+ 108:	0c000000 	jal	0 <sum>
+ 10c:	00000000 	nop
+ 110:	00000000 	nop
+ 114:	03c0e825 	move	sp,s8
+ 118:	8fbf0094 	lw	ra,148(sp)
+ 11c:	8fbe0090 	lw	s8,144(sp)
+ 120:	27bd0098 	addiu	sp,sp,152
+ 124:	03e00008 	jr	ra
+ 128:	00000000 	nop
+
+Disassembly of section .reginfo:
+
+00000000 <.reginfo>:
+   0:	e000007c 	sc	zero,124(zero)
+	...
+
+Disassembly of section .MIPS.abiflags:
+
+00000000 <.MIPS.abiflags>:
+   0:	01200000 	0x1200000
+   4:	01000101 	0x1000101
+	...
+  10:	00000001 	movf	zero,zero,$fcc0
+  14:	00000000 	nop
+
+Disassembly of section .pdr:
+
+00000000 <.pdr>:
+   0:	00000000 	nop
+   4:	c0000000 	ll	zero,0(zero)
+   8:	fffffffc 	sdc3	$31,-4(ra)
+	...
+  14:	00000018 	mult	zero,zero
+  18:	0000001e 	0x1e
+  1c:	0000001f 	0x1f
+  20:	00000000 	nop
+  24:	c0000000 	ll	zero,0(zero)
+  28:	fffffffc 	sdc3	$31,-4(ra)
+	...
+  34:	00000098 	0x98
+  38:	0000001e 	0x1e
+  3c:	0000001f 	0x1f
+
+Disassembly of section .rodata:
+
+00000000 <.rodata>:
+   0:	5b626174 	0x5b626174
+   4:	205d6425 	addi	sp,v0,25637
+   8:	6425203d 	0x6425203d
+   c:	00000a20 	0xa20
+  10:	6379630a 	0x6379630a
+  14:	3d20656c 	0x3d20656c
+  18:	20642520 	addi	a0,v1,9504
+  1c:	Address 0x000000000000001c is out of bounds.
+
+
+Disassembly of section .ctors:
+
+00000000 <.ctors>:
+   0:	00000000 	nop
+
+Disassembly of section .comment:
+
+00000000 <.comment>:
+   0:	43434700 	c0	0x1434700
+   4:	4728203a 	c1	0x128203a
+   8:	2029554e 	addi	t1,at,21838
+   c:	2e322e38 	sltiu	s2,s1,11832
+  10:	Address 0x0000000000000010 is out of bounds.
+
+
+Disassembly of section .gnu.attributes:
+
+00000000 <.gnu.attributes>:
+   0:	00000f41 	0xf41
+   4:	756e6700 	jalx	5b99c00 <main+0x5b99b9c>
+   8:	00070100 	sll	zero,a3,0x4
+   c:	01040000 	0x1040000
